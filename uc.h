@@ -9,4 +9,24 @@ typedef struct _uc_data {
 	unsigned int ed;
 } uc_data;
 
+typedef struct _uc_info {
+	char opc[8];
+	char reg[4];
+	unsigned int cd;
+} uc_info;
+
+data * fetch();
+uc_data * decode(data *);
+instr decode_opc(int);
+unsigned int decode_reg(int);
+unsigned int decode_cd(int, int, unsigned int);
+void execute(uc_data *);
+void dump_decoded(uc_data *);
+void loop();
+void load_uc();
+void set_state(data *);
+data * get_state();
+int trap();
+void enable_trap(int);
+void set_pc(int);
 #endif

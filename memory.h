@@ -33,4 +33,5 @@ data * data_from_int(int);
 void load_ram();
 void dump_ram_at(int);
 int mp_cycle();
+void dump_ram(int, int);
 #endif

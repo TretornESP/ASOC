@@ -4,16 +4,19 @@
 #include "bus_a.h"
 #include "bus_c.h"
 #include "bus_d.h"
-
+#include "exception.h"
+#include "debug.h"
 #include "memory.h"
 
-data *RAM;
+#define SIGN(i) ((i & 0x20) >> 5) ? -(i & 0x1F) : (i & 0x1F)
+
+
+data *RAM[RAM_SIZE];
 
 int set_ram_from_int(int pos, int i) {
-	data d = {.wrapper  = i};
 
 	if (pos < RAM_SIZE) {
-		RAM[pos].wrapper = i;
+		RAM[pos]->wrapper = i;
 		return 0;
 	} 
 
@@ -21,7 +24,10 @@ int set_ram_from_int(int pos, int i) {
 }
 
 void load_ram() {
-	RAM = calloc(RAM_SIZE, sizeof(data));
+
+	for (int i = 0; i < RAM_SIZE; i++)
+		RAM[i] = malloc(sizeof(data));
+		
 }
 
 int int_from_data(data * d) {
@@ -35,9 +41,20 @@ data* data_from_int(int i) {
 	return d;
 }
 
+void dump_ram(int rows, int cols) {
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			int addr = ((i*cols)+j);
+			if (addr >= RAM_SIZE) mp_overflow(addr);
+			printf(" %3x ", RAM[addr] -> wrapper);
+		}
+		printf("\n");
+	}
+}
+
 void dump_ram_at(int pos) {
-	int w = RAM[pos].wrapper;
-	bitfield r = RAM[pos].binary;
+	int w = RAM[pos]->wrapper;
+	bitfield r = RAM[pos]->binary;
 
 	printf("+----- RAM AT %03x Hex: %03x ------+\n", pos, w);
 	printf("|    d0: %1d d1: %1d  d2: %1d  d3: %1d   |\n", r.d0, r.d1, r.d2, r.d3);
@@ -46,19 +63,28 @@ void dump_ram_at(int pos) {
 	printf("+--------------------------------+\n");
 }
 
+void check_bus_sanity() {
+	if (bus_c_get() == NULL) bus_exception("c");
+	if (bus_d_get() == NULL && bus_c_get()->wrapper == RAM_WM) bus_exception("d");
+	if (bus_a_get() == NULL) bus_exception("a");
+}
+
 int mp_cycle() {
+	check_bus_sanity();
 	int mode = bus_c_get()->wrapper;
 	int addr = bus_a_get()->wrapper;
-	int data = bus_d_get()->wrapper;
 
-	if (addr >= RAM_SIZE) return -1;
+	if (addr >= RAM_SIZE) mp_overflow(addr);
 
 	if (mode == RAM_RM) {
 		bus_d_set(RAM[addr]);
+		//printf("READING %x FROM: %x\n", RAM[addr]->wrapper, addr);
  	} else if (mode == RAM_WM) {
+		int data = bus_d_get()->wrapper;
+		//printf("WRITING %x TO: %x\n", data, addr);
 		set_ram_from_int(addr, data);
 	} else {
-		return -2;	
+		mp_unknown_code(mode);
 	}
 
 	return 0;

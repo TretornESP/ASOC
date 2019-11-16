@@ -1,11 +1,35 @@
 #include <stdlib.h>
+#include <stdio.h>
 
+#include "iset.h"
+#include "alu.h"
 #include "uc.h"
 #include "memory.h"
 #include "iset.h"
+#include "addressing.h"
+#include "buses.h"
+#include "historic.h"
+
+#define SIGN(i) ((i & 0x20) >> 5) ? -(i & 0x1F) : (i & 0x1F)
+#define clear() printf("\033[H\033[J")
+#define gotoxy(x,y) printf("\033[%d;%dH", (y), (x))
 
 int PC = 0;
 int cycle = 0;
+
+data * state;
+
+data * get_state() {
+	return state;
+}
+
+void set_state(data * s) {
+	state = s;	
+}
+
+void set_pc(int pc) {
+	PC = pc;
+}
 
 data * fetch() {
 	bus_a_set(data_from_int(PC));
@@ -17,20 +41,24 @@ data * fetch() {
 }
 
 uc_data * decode(data * d) {
-	uc_data decomposed = malloc(sizeof(uc_data));
+	uc_data *decomposed = malloc(sizeof(uc_data));
 
-	instr = decode_opc(d->wrapper);
-
-	decomposed -> func = instr.func;
+	instr ins = decode_opc(d->wrapper);
+	
+	decomposed -> func = ins.func;
 	decomposed -> reg = decode_reg(d->wrapper);
-	decomposed -> ed = decode_cd(d->wrapper, instr.opc);
+	decomposed -> ed = decode_cd(d->wrapper, ins.opc, decomposed -> reg);
+	
+	push(ins.nemo, get_register_names(decomposed -> reg), get_addressing_names((d->wrapper & 0x0C0)>>6), SIGN(d->wrapper & 0x03F));
+	//printf("[DEBUG][ASSEMBLY] %s %s %s:%d\n", ins.nemo, get_register_names(decomposed -> reg), get_addressing_names((d->wrapper & 0x0C0)>>6), SIGN(d->wrapper & 0x03F));
+	return decomposed;
 }
 
 instr decode_opc(int i) {
 	int index = (i & 0xE00) >> 9;
 
 	if (iset[index].opc == 0x7) {
-		index = (d->wrapper & 0x180) >> 7;
+		index = (i & 0x180) >> 7;
 		return extended_iset[index];
 	} else {
 		return iset[index];	
@@ -41,40 +69,54 @@ unsigned int decode_reg(int i) {
 	return (i & 0x100) >> 8;
 }
 
-OPCR JICD CDCD
-0000 0000 0000
-0     4   0
-
-void decode_cd(int i, int opc) {
-	if (opc == 0x5 || opc == 0x6) {
-		
+unsigned int decode_cd(int i, int opc, unsigned int reg) {
+	if (opc == 0x5 || opc == 0x6) { //En el inmediato, opcodes 0x5 y 0x6 el dato efectivo es el cd
+		return (i & 0x03F); //Extraemos el cd	
 	}
-
-	int j = (i & 0x080) >> 7;
-	int i = (i & 0x040) >> 6;
-
-	if (// ADDRESSING
+	
+	int option = (i & 0x0C0) >> 6; //Si no extraemos el modo de direccionamiento
+	int cd  = (i & 0x03F); //el cd 
+	return addressing(cd, alu_get_x(), option); //Y aplicamos el direccionamiento
 }
 
-
-
-void execute() {
-
+void execute(uc_data * decoded) {
+	unsigned int in[] = {decoded->reg, decoded->ed};
+	decoded->func((void*)in);
 }
 
-void memory() {
-
+void dump_decoded(uc_data * d) {
+	printf("[DEBUG] DATA at %p (func: %p, reg: %s contains: %x, cd: %x\n", d, d->func, get_register_names(d -> reg), alu_get_reg(d -> reg), d -> ed);
 }
 
+void load_uc() {
+	state = calloc(1, sizeof(data));
+}
+
+void enable_trap(int trap) {
+	state -> binary.d10 = trap;
+}
+
+int trap() {
+	return state->binary.d10;
+}
 
 void loop() {
-	data * raw = fetch(); //Retrieve from ram
-	uc_data * decoded = decode(raw); //Decode into opc, register, efective direction
-	data * res = execute(decoded) //Execute from alu
-	int result = memory(res); //Write to memory
+	while (1) {
+		data * raw = fetch(); //Retrieve from ram
+		uc_data * decoded = decode(raw); //Decode into opc, register, efective direction
+		clear();
+		dump_ram(5,5); 	
+		dump_registers();
+		print_historic();
+		execute(decoded); //Execute from alu
+		//dump_decoded(decoded);
+		//printf("[DEBUG][RUNTIME] CYCLE %d EXECUTED: %d RESULT: %d\n", cycle, PC, result);
 
-	printf("CYCLE %d EXECUTED: %d RESULT: %d\n", cycle, pc, result);
-
-	cycle++;
-	PC++;
+		cycle++;
+		PC++;
+		
+		if (trap) getchar();
+	}
 }
+
+

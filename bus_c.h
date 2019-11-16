@@ -4,6 +4,7 @@
 #include "memory.h"
 
 data * bus_c_get();
-void bus_c_set();
+void bus_c_set(data*);
+void bus_c_init();
 
 #endif

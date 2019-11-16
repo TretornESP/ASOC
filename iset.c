@@ -5,9 +5,6 @@
 #include "iset.h"
 #include "instructions.h"
 
-instr *iset;
-instr *extended_iset;
-
 char * opcode_names[] = {
 	"LD", "ST", "ADD", "BR", "BZ", "LDH", "SUBH", "EXT"
 };

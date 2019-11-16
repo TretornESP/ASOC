@@ -4,6 +4,6 @@
 #include "memory.h"
 
 data * bus_a_get();
-void bus_a_set();
-
+void bus_a_set(data*);
+void bus_a_init();
 #endif

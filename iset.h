@@ -7,7 +7,6 @@
 #include "memory.h"
 
 typedef int opcode;
-typedef int addressing;
 typedef void *(*func_ptr)(void*);
 
 typedef struct _instr {
@@ -18,4 +17,7 @@ typedef struct _instr {
 
 void load_iset();
 instr *find_instruction_from_data(data*);
+
+instr *iset;
+instr *extended_iset;
 #endif
