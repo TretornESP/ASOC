@@ -31,6 +31,16 @@ void set_pc(int pc) {
 	PC = pc;
 }
 
+void dump_status() {
+	int idx = 0;
+	printf("S: XXXXXXXCOZTH\nS: ");
+	for (int i = 0x001; i < 4096; i*=2) {
+		printf("%d", (state->wrapper & i) >> idx);
+		idx++;
+	}
+	printf("\n");
+}
+
 data * fetch() {
 	bus_a_set(data_from_int(PC));
 	bus_c_set(data_from_int(RAM_RM));
@@ -47,7 +57,7 @@ uc_data * decode(data * d) {
 	
 	decomposed -> func = ins.func;
 	decomposed -> reg = decode_reg(d->wrapper);
-	decomposed -> ed = decode_cd(d->wrapper, ins.opc, decomposed -> reg);
+	decomposed -> ed = decode_cd(d->wrapper, ins.opc, decomposed -> reg, ins.is_extended);
 	
 	push(ins.nemo, get_register_names(decomposed -> reg), get_addressing_names((d->wrapper & 0x0C0)>>6), SIGN(d->wrapper & 0x03F));
 	//printf("[DEBUG][ASSEMBLY] %s %s %s:%d\n", ins.nemo, get_register_names(decomposed -> reg), get_addressing_names((d->wrapper & 0x0C0)>>6), SIGN(d->wrapper & 0x03F));
@@ -69,13 +79,18 @@ unsigned int decode_reg(int i) {
 	return (i & 0x100) >> 8;
 }
 
-unsigned int decode_cd(int i, int opc, unsigned int reg) {
-	if (opc == 0x5 || opc == 0x6) { //En el inmediato, opcodes 0x5 y 0x6 el dato efectivo es el cd
-		return (i & 0x03F); //Extraemos el cd	
+unsigned int decode_cd(int i, int opc, unsigned int reg, int is_extended) {
+	int cd  = (i & 0x03F); //el cd 
+	if (is_extended || opc == 0x3 || opc == 0x4) {
+		return cd;	
+	}
+
+	if (opc == 0x5 || opc == 0x6) { //En el inmediato, opcodes 0x5 y 0x6 con BITS JI == 00 -> el dato efectivo es el cd
+		if (! ((i & 0x0C0) >> 6)) //Si JI == 00
+			return (i & 0x03F); //Extraemos el cd	
 	}
 	
 	int option = (i & 0x0C0) >> 6; //Si no extraemos el modo de direccionamiento
-	int cd  = (i & 0x03F); //el cd 
 	return addressing(cd, alu_get_x(), option); //Y aplicamos el direccionamiento
 }
 
@@ -100,6 +115,26 @@ int trap() {
 	return state->binary.d10;
 }
 
+void uc_overflow(int idx) {
+	state -> binary.d8 = idx;
+}
+
+void uc_carry(int idx) {
+	state -> binary.d7 = idx;
+}
+
+void uc_zero(int idx) {
+	state -> binary.d9 = idx;
+}
+
+void uc_hlt(int idx) {
+	state -> binary.d11 = idx;
+}
+
+void uc_backstep() {
+	PC--;
+}
+
 void loop() {
 	while (1) {
 		data * raw = fetch(); //Retrieve from ram
@@ -107,6 +142,7 @@ void loop() {
 		clear();
 		dump_ram(5,5); 	
 		dump_registers();
+		dump_status();
 		print_historic();
 		execute(decoded); //Execute from alu
 		//dump_decoded(decoded);

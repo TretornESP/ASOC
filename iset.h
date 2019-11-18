@@ -2,7 +2,7 @@
 #define _ISET_H
 
 #define ISET_SIZE 8
-#define EXTENDED_ISET_SIZE 3
+#define EXTENDED_ISET_SIZE 4
 
 #include "memory.h"
 
@@ -13,6 +13,7 @@ typedef struct _instr {
 	char nemo[8];
 	func_ptr func;
 	opcode opc;
+	int is_extended;
 } instr;
 
 void load_iset();

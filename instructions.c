@@ -2,6 +2,7 @@
 #include "buses.h"
 #include "alu.h"
 #include "uc.h"
+#define SIGN(i) ((i & 0x20) >> 5) ? -(i & 0x1F) : (i & 0x1F)
 
 void* ld(void* input){
 	unsigned int * in = (unsigned int*)input;
@@ -22,14 +23,13 @@ void* st(void* input){
 }
 
 void* add(void* input){
-	unsigned int * in = (unsigned int*) input;
-	alu_set_reg(in[0], alu_get_reg(in[0])+in[1]);	
+	alu_add(input);
 	return 0;
 }
 
 void* br(void* input){
 	unsigned int * in = (unsigned int*) input;
-	set_pc(in[1]);
+	set_pc(in[1]-1);
 }
 
 void* bz(void* input){
@@ -44,19 +44,26 @@ void* ldh(void* input){
 }
 
 void* subh(void* input){
-	unsigned int * in = (unsigned int*) input;
-	alu_set_reg(in[0], alu_get_reg(in[0])-in[1]);
+	alu_sub(input);
 	return 0;
 }
 
 void* ext(void* input){hlt(input);return 0;}
 
 void* hlt(void* input){
-	data * state = get_state();
-	state->binary.d11 = 1;
-	
-	while (1);
+	uc_hlt(1);
+	uc_backstep();
 }
 
 void* ei(void* input){return 0;}
 void* di(void* input){return 0;}
+
+void* subr(void* input) {
+	unsigned int * in = (unsigned int*) input;
+
+	in[0] = (in[1] & 0x2) >> 1;
+	in[1] = alu_get_reg(in[1] & 0x1);
+
+	alu_sub(in);
+	return 0;
+}

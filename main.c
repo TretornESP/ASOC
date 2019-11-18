@@ -9,24 +9,28 @@
 #include "alu.h"
 #include "uc.h"
 #include "exception.h"
+#include "loader.h"
 
 
 unsigned int example_program[] = {
-	        //OPCR JICD CDCD NEMOTECNICO
-	0xA23,  //1010 0010 0011 ldh x, -3
-	0xB06,  //1011 0000 0110 ldh acc, 6
-	0xD04,  //1101 0000 0100 subh acc, 4
-	0x3C6,  //0011 1100 0110 st acc, post-index(x):0x006
-	0xE00,  //1110 0000 0000 hlt
-	0x000,  //0000 0000 0000 0x0
-	0x008,  //0000 0000 1000 0x8
+      //INSTRUCTION POS ASSEMBLY    BINARY         HEX
+	0xA1E, //   0   LDH x 30    1010 0001 1110 0xA1E
+	0xB1E, //   1   LDH acc 30  1011 0001 1110 0xB1E
+	0xF82, //   2 	subr acc, x 1111 1000 0010 0xF82
+	0x806, //   3 	bz 6        1000 0000 0110 0x806
+	0xB00, //   4 	LDH acc 0   1011 0000 0000 0xB00
+	0xE00, //   5 	hlt         1110 0000 0000 0xE00
+	0xB01, //   6 	LDH acc 1   1011 0000 0001 0xB01
+	0xE00, //   7   hlt         1110 0000 0000 0xE00
 };
 
+#define EXAMPLE_SIZE 8 //Tamaño del programa de ejemplo
+
 void load_test_program() {
-	for (int i = 0; i < 7; i++)
+	for (int i = 0; i < EXAMPLE_SIZE; i++)
 		set_ram_from_int(i, example_program[i]);
 
-	for (int i = 7; i < RAM_SIZE; i++)
+	for (int i = EXAMPLE_SIZE; i < RAM_SIZE; i++)
 		set_ram_from_int(i, 0x0);
 }
 
@@ -41,7 +45,15 @@ int main(int argc, char* argv[]) {
 	enable_debug(1);
 	set_catchfire(1);
 
-	load_test_program();
+	if (argc == 2) {
+		if (load_ram_from_file(argv[1])) {
+			printf("INVALID PROGRAM, ABORTING\n");
+			return 1;
+		}
+	} else {
+		printf("NO PROGRAM SPECIFIED, USING TEST PROGRAM\n");
+		load_test_program();	
+	}
 
 	printf("PRESS ENTER TO RUN PROGRAM\n");
 	getchar();

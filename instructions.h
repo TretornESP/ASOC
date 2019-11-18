@@ -12,5 +12,6 @@ void* ext(void*);
 void* hlt(void*);
 void* ei(void*);
 void* di(void*); 
+void* subr(void*);
 
 #endif

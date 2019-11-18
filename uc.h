@@ -19,7 +19,7 @@ data * fetch();
 uc_data * decode(data *);
 instr decode_opc(int);
 unsigned int decode_reg(int);
-unsigned int decode_cd(int, int, unsigned int);
+unsigned int decode_cd(int, int, unsigned int, int);
 void execute(uc_data *);
 void dump_decoded(uc_data *);
 void loop();
@@ -29,4 +29,9 @@ data * get_state();
 int trap();
 void enable_trap(int);
 void set_pc(int);
+void uc_overflow(int);
+void uc_carry(int);
+void uc_zero(int);
+void uc_hlt(int);
+void uc_backstep();
 #endif

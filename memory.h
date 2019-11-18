@@ -18,7 +18,7 @@ typedef struct _bitfield {
 	unsigned int d9 : 1;
 	unsigned int d10 : 1;
 	unsigned int d11 : 1;
-} bitfield;
+} __attribute__((packed)) bitfield;
 
 typedef union _data {
 	bitfield binary;

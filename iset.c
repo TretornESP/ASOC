@@ -10,7 +10,7 @@ char * opcode_names[] = {
 };
 
 char * extended_opcode_names[] = {
-	"HLT", "EI", "DI"
+	"HLT", "EI", "DI", "SUBR"
 };
 
 func_ptr opcode_funcs[] = {
@@ -18,7 +18,7 @@ func_ptr opcode_funcs[] = {
 };
 
 func_ptr extended_opcode_funcs[] = {
-	hlt, ei, di
+	hlt, ei, di, subr
 };
 
 void load_iset() {
@@ -26,13 +26,16 @@ void load_iset() {
 	for (int i = 0; i < ISET_SIZE; i++) {
 		instr ins = {.func = opcode_funcs[i], .opc = i};
 		strcpy(ins.nemo, opcode_names[i]);
+		ins.is_extended = 0;
 		iset[i] = ins;
+		
 	}
 
 	extended_iset = malloc(sizeof(instr)*ISET_SIZE);
 	for (int i = 0; i < EXTENDED_ISET_SIZE; i++) {
 		instr ins = {.func = extended_opcode_funcs[i], .opc = i};
 		strcpy(ins.nemo, extended_opcode_names[i]);
+		ins.is_extended = 1;
 		extended_iset[i] = ins;
 	}
 }

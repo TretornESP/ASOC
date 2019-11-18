@@ -10,4 +10,6 @@ void alu_set_acc(reg);
 reg alu_get_x();
 void alu_set_x(reg);
 void dump_registers();
+void alu_add(void*);
+void alu_sub(void*);
 #endif
