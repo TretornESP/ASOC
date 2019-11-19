@@ -4,51 +4,15 @@
 #include "uc.h"
 #define SIGN(i) ((i & 0x20) >> 5) ? -(i & 0x1F) : (i & 0x1F)
 
-void* ld(void* input){
-	unsigned int * in = (unsigned int*)input;
-	alu_set_reg(in[0], in[1]);
-	return 0;
-}
-
-void* st(void* input){
-	unsigned int * in = (unsigned int*)input;
-	int reg = alu_get_reg(in[0]);
-	
-	bus_a_set(data_from_int(in[1]));
-	bus_d_set(data_from_int(reg));
-	bus_c_set(data_from_int(RAM_WM));
-
-	mp_cycle();
-	return 0;
-}
-
-void* add(void* input){
-	alu_add(input);
-	return 0;
-}
-
-void* br(void* input){
-	unsigned int * in = (unsigned int*) input;
-	set_pc(in[1]-1);
-}
-
-void* bz(void* input){
-	data * state = get_state();
-	if (state->binary.d9) br(input);
-}
-
-void* ldh(void* input){	
-	unsigned int * in = (unsigned int*) input;
-	alu_set_reg(in[0], in[1]);
-	return 0;
-}
-
-void* subh(void* input){
-	alu_sub(input);
-	return 0;
-}
-
-void* ext(void* input){hlt(input);return 0;}
+//Completame
+void* ld(void* input){}
+void* st(void* input){}
+void* add(void* input){}
+void* br(void* input){}
+void* bz(void* input){}
+void* ldh(void* input){}
+void* subh(void* input){}
+void* ext(void* input){hlt(input);return 0;} //De momento dejame así
 
 void* hlt(void* input){
 	uc_hlt(1);
@@ -58,6 +22,14 @@ void* hlt(void* input){
 void* ei(void* input){return 0;}
 void* di(void* input){return 0;}
 
+
+//Esta es una instrucción nueva! Como sub pero le restas un registro a otro
+//El formato es: OOOO OXXX XX12
+//O: Opcode, 1111 11
+//X: Ignorado, da igual
+//1: Registro 1 (0 = x, 1 = acc)
+//2: Registro 2 (0 = x, 1 = acc)
+//Ejemplo: subr x, acc en binario 1111 1000 0001 y el equivalente lenguaje c es: X=X-ACC
 void* subr(void* input) {
 	unsigned int * in = (unsigned int*) input;
 

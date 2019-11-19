@@ -53,26 +53,6 @@ void alu_set_x(reg val) {
 	x = val;
 }
 
-void alu_add(void * input) {
-	unsigned int * in = (unsigned int*) input;
-	int result = alu_get_reg(in[0])+in[1];
-
-	uc_overflow(result > MAX_INT+1 || result < -MAX_INT-1);
-	uc_carry(result == MAX_INT+1 || result == -MAX_INT-1);
-	
-	alu_set_reg(in[0], result%MAX_INT);
-	uc_zero (result % MAX_INT == 0);
-	return;	
-}
-
-void alu_sub(void * input) {
-	unsigned int * in = (unsigned int*) input;
-	int result = alu_get_reg(in[0])-in[1];
-
-	uc_overflow(result > MAX_INT+1 || result < -MAX_INT-1);
-	uc_carry(result == MAX_INT+1 || result == -MAX_INT-1);
-	
-	alu_set_reg(in[0], result%MAX_INT);
-	uc_zero (result % MAX_INT == 0);	
-	return;	
-}
+//Completame o rehazme mejor
+void alu_add(void * input) {}
+void alu_sub(void * input) {}
