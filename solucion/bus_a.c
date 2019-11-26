@@ -2,6 +2,7 @@
 #include "bus_a.h"
 
 #include "memory.h"
+#include "buses.h"
 
 data * bus_a_data;
 

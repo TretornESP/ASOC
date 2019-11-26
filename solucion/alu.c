@@ -14,7 +14,7 @@ reg acc = 0x0;
 char *register_names[] = {"x", "acc"};
 
 void dump_registers() {
-	printf("X: %d, ACC: %d\n", SIGN(x), acc);
+	printf("X: %x, ACC: %x\n", x, acc);
 }
 
 char * get_register_names(int index) {

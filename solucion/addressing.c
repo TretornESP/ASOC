@@ -6,18 +6,29 @@ int doi(int cd, int r) {
 	bus_a_set(data_from_int(cd+r));
 	bus_c_set(data_from_int(RAM_RM));
 	mp_cycle();
-	return bus_d_get()->wrapper;
+	
+	int wr = bus_d_get() -> wrapper;
+
+	//printf("CD: %x, R: %x, GOT: %x\n",cd ,r, wr);
+	return wr;
 }
 
 int iop(int cd, int r) {
-	int sig = SIGN(r);
+	int sig = r;
 	bus_a_set(data_from_int(cd));
 	bus_c_set(data_from_int(RAM_RM));
 
 	mp_cycle();
-	
 	int addr = bus_d_get()->wrapper;
-	return addr+sig;
+	//printf("AFTER STEP ONE GOT: %d\n", addr);
+	bus_a_set(data_from_int(addr+sig));
+	bus_c_set(data_from_int(RAM_RM));
+	
+	mp_cycle();
+
+	addr = bus_d_get() -> wrapper;
+	//printf("AFTER STEP TWO GOT: %d\n", addr);
+	return addr;
 }
 
 typedef int (*func_ptr)(int, int);

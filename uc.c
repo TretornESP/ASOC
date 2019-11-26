@@ -9,6 +9,7 @@
 #include "addressing.h"
 #include "buses.h"
 #include "historic.h"
+#include "ces.h"
 
 #define SIGN(i) ((i & 0x20) >> 5) ? -(i & 0x1F) : (i & 0x1F)
 #define clear() printf("\033[H\033[J")
@@ -59,8 +60,8 @@ uc_data * decode(data * d) {
 	decomposed -> reg = decode_reg(d->wrapper);
 	decomposed -> ed = decode_cd(d->wrapper, ins.opc, decomposed -> reg, ins.is_extended);
 	
-	push(ins.nemo, get_register_names(decomposed -> reg), get_addressing_names((d->wrapper & 0x0C0)>>6), SIGN(d->wrapper & 0x03F));
-	//printf("[DEBUG][ASSEMBLY] %s %s %s:%d\n", ins.nemo, get_register_names(decomposed -> reg), get_addressing_names((d->wrapper & 0x0C0)>>6), SIGN(d->wrapper & 0x03F));
+	push(ins.nemo, get_register_names(decomposed -> reg), get_addressing_names((d->wrapper & 0x0C0)>>6), d->wrapper & 0x03F);
+	//printf("[DEBUG][ASSEMBLY] %s %s %s:%d\n", ins.nemo, get_register_names(decomposed -> reg), get_addressing_names((d->wrapper & 0x0C0)>>6), d->wrapper & 0x03F);
 	return decomposed;
 }
 
@@ -85,12 +86,13 @@ unsigned int decode_cd(int i, int opc, unsigned int reg, int is_extended) {
 		return cd;	
 	}
 
-	if (opc == 0x5 || opc == 0x6) { //En el inmediato, opcodes 0x5 y 0x6 con BITS JI == 00 -> el dato efectivo es el cd
+	if ( opc == 0x1 || opc == 0x5 || opc == 0x6) { //En el inmediato, opcodes 0x5 y 0x6 con BITS JI == 00 -> el dato efectivo es el cd
 		if (! ((i & 0x0C0) >> 6)) //Si JI == 00
 			return (i & 0x03F); //Extraemos el cd	
 	}
 	
-	int option = (i & 0x0C0) >> 6; //Si no extraemos el modo de direccionamiento
+	int option = (i & 0x0C0) >> 6; //Si no, extraemos el modo de direccionamiento
+
 	return addressing(cd, alu_get_x(), option); //Y aplicamos el direccionamiento
 }
 
@@ -135,23 +137,97 @@ void uc_backstep() {
 	PC--;
 }
 
+void examine() {
+	printf("Address: \n");
+	int addr;
+	scanf("%d", &addr);
+
+	dump_ram_at(addr);
+	scanf("%d", &addr);
+}
+
+void setaddr() {
+	printf("Address: \n");
+	int addr, data;
+	scanf("%d", &addr);
+
+	printf("Data: \n");
+	scanf("%d", &data);
+	
+	set_ram_from_int(addr, data);
+	dump_ram_at(addr);
+	scanf("%d", &addr);
+}
+
+void help() {
+	printf("TRAP CATCHED\n");
+	printf("Options:\n");
+	printf("c continue\n");
+	printf("h this help\n");
+	printf("l list executed instructions\n");
+	printf("s set memory at\n");
+	printf("x examine addr\n");
+	printf("i write to input\n");
+	printf("q quit\n");
+}
+
+void finish() {
+	clear();
+	printf("EXECUTION ENDED IN %d cycles\n", cycle);
+	dump_ram(64, 64);
+	dump_registers();
+	dump_status();
+	print_historic();
+	dump_output();
+	exit(0);
+}
+
 void loop() {
 	while (1) {
 		data * raw = fetch(); //Retrieve from ram
 		uc_data * decoded = decode(raw); //Decode into opc, register, efective direction
-		clear();
+		//clear();
 		dump_ram(5,5); 	
 		dump_registers();
 		dump_status();
-		print_historic();
+		//print_historic();
 		execute(decoded); //Execute from alu
 		//dump_decoded(decoded);
 		//printf("[DEBUG][RUNTIME] CYCLE %d EXECUTED: %d RESULT: %d\n", cycle, PC, result);
-
+		//printf("[DEBUG] YIELDING TO CES\n");
+		ces_cycle();
 		cycle++;
 		PC++;
+		if (trap()) {
+			int flag = 1;
+			while (flag) { 
+				printf("$");
+				char c = getchar();
 		
-		if (trap) getchar();
+				if (c=='c') {	
+					flag = 0;
+				} else if (c=='h') {
+					help();
+				} else if (c=='l') {
+					print_historic();
+				} else if (c=='s') {
+					setaddr();
+				} else if (c=='x') {
+					examine();
+				} else if (c=='i') {
+					input();
+				} else if (c=='q') {
+					exit(0);
+				}
+			}
+		} else {
+			if (state->binary.d11) {
+				printf("CPU is halted, finish execution? (s/n)\n");
+				char c = getchar();
+				if (c=='s')
+					finish();
+			}		
+		}
 	}
 }
 

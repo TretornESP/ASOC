@@ -18,6 +18,8 @@ void* st(void* input){
 	bus_d_set(data_from_int(reg));
 	bus_c_set(data_from_int(RAM_WM));
 
+	//printf("ADDR: %d DATA: %d MODE: %d\n", in[1], reg, RAM_WM);
+
 	mp_cycle();
 	return 0;
 }

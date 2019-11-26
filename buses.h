@@ -4,5 +4,8 @@
 #include "bus_c.h"
 #include "bus_d.h"
 
+#define DISP_0 0x0
+#define DISP_1 0x1
+
 void load_buses();
 #endif

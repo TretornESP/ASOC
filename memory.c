@@ -63,17 +63,37 @@ void dump_ram_at(int pos) {
 	printf("+--------------------------------+\n");
 }
 
+void dump_data(data* pos) {
+	bitfield r = pos->binary;
+	printf("+--------------------------------+\n");
+	printf("|    d0: %1d d1: %1d  d2: %1d  d3: %1d   |\n", r.d0, r.d1, r.d2, r.d3);
+	printf("|    d4: %1d d5: %1d  d6: %1d  d7: %1d   |\n", r.d4, r.d5, r.d6, r.d7);
+	printf("|    d8: %1d d9: %1d d10: %1d d11: %1d   |\n", r.d8, r.d9, r.d10, r.d11);	
+	printf("+--------------------------------+\n");
+}
+
 void check_bus_sanity() {
 	if (bus_c_get() == NULL) bus_exception("c");
 	if (bus_d_get() == NULL && bus_c_get()->wrapper == RAM_WM) bus_exception("d");
 	if (bus_a_get() == NULL) bus_exception("a");
 }
 
+int read_mode_from_bus(data * d) {
+	return d->binary.d0;	
+}
+
+int read_disp_from_bus(data * d) {
+	return d->binary.d2;
+}
+
 int mp_cycle() {
 	check_bus_sanity();
-	int mode = bus_c_get()->wrapper;
+	data* control = bus_c_get();
+	if (read_disp_from_bus(control) != DISP_0) return 0;
+	int mode = read_mode_from_bus(control);
 	int addr = bus_a_get()->wrapper;
-
+	//printf("MODE: %d\n", control->wrapper);
+	//dump_data(control);
 	if (addr >= RAM_SIZE) mp_overflow(addr);
 
 	if (mode == RAM_RM) {
@@ -87,5 +107,5 @@ int mp_cycle() {
 		mp_unknown_code(mode);
 	}
 
-	return 0;
+	return 1;
 }

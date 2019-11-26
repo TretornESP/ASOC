@@ -14,7 +14,7 @@ reg acc = 0x0;
 char *register_names[] = {"x", "acc"};
 
 void dump_registers() {
-	printf("X: %d, ACC: %d\n", SIGN(x), acc);
+	printf("X: %x, ACC: %x\n", x, acc);
 }
 
 char * get_register_names(int index) {
@@ -53,6 +53,26 @@ void alu_set_x(reg val) {
 	x = val;
 }
 
-//Completame o rehazme mejor
-void alu_add(void * input) {}
-void alu_sub(void * input) {}
+void alu_add(void * input) {
+	unsigned int * in = (unsigned int*) input;
+	int result = alu_get_reg(in[0])+in[1];
+
+	uc_overflow(result > MAX_INT+1 || result < -MAX_INT-1);
+	uc_carry(result == MAX_INT+1 || result == -MAX_INT-1);
+	
+	alu_set_reg(in[0], result%MAX_INT);
+	uc_zero (result % MAX_INT == 0);
+	return;	
+}
+
+void alu_sub(void * input) {
+	unsigned int * in = (unsigned int*) input;
+	int result = alu_get_reg(in[0])-in[1];
+
+	uc_overflow(result > MAX_INT+1 || result < -MAX_INT-1);
+	uc_carry(result == MAX_INT+1 || result == -MAX_INT-1);
+	
+	alu_set_reg(in[0], result%MAX_INT);
+	uc_zero (result % MAX_INT == 0);	
+	return;	
+}

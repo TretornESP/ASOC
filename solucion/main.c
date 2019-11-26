@@ -11,26 +11,35 @@
 #include "exception.h"
 #include "loader.h"
 
-
 unsigned int example_program[] = {
-      //INSTRUCTION POS ASSEMBLY    BINARY         HEX
-	0xA1E, //   0   LDH x 30    1010 0001 1110 0xA1E
-	0xB1E, //   1   LDH acc 30  1011 0001 1110 0xB1E
-	0xF82, //   2 	subr acc, x 1111 1000 0010 0xF82
-	0x806, //   3 	bz 6        1000 0000 0110 0x806
-	0xB00, //   4 	LDH acc 0   1011 0000 0000 0xB00
-	0xE00, //   5 	hlt         1110 0000 0000 0xE00
-	0xB01, //   6 	LDH acc 1   1011 0000 0001 0xB01
-	0xE00, //   7   hlt         1110 0000 0000 0xE00
+	0xA00, //   0   LDH x 0           1010 0000 0000 0xA00
+	0x1CD, //   1   LD acc post(0xD)  0001 1100 1100 0x1CD
+	0x34C, //   2   ST acc indi(0xC)  0011 0100 1011 0x34C
+	0x40B, //   3   ADD x dir(0xB)    0100 0000 1010 0x40B
+	0x10A, //   4	LD acc 0x00A      0001 0000 1001 0x10A
+	0xD01, //   5	subh acc, 1       1101 0000 0001 0xD01
+	0x30A, //   6   st acc 0x00A      0011 0000 1010 0x30A
+	0x809, //   7	bz 0x009          1000 0000 1001 0x809
+	0x601, //   8   BR 1              0110 0000 0001 0x601
+	0xE00, //   9   HLT               1110 0000 0000 0xE00
+        0x004, //   A   size of string 4
+        0x001, //   B   increment of x in 1 (addh would be awesome)
+        0xFFC, //   C   io vectors
+        0xF01, //   D   asoc string  
+       [0x00E ... 0xF00] = 0x0,
+	0x041, //   F01 A
+	0x073, //   F02 s
+	0x06F, //   F03 o
+	0x063, //   F04 c
+       [0xF05 ... 0xFFF] = 0x0, // FF5 to FFF
 };
 
-#define EXAMPLE_SIZE 8 //Tamaño del programa de ejemplo
-
 void load_test_program() {
-	for (int i = 0; i < EXAMPLE_SIZE; i++)
+	size_t size = sizeof(example_program)/sizeof(example_program[0]);
+	for (int i = 0; i < size; i++)
 		set_ram_from_int(i, example_program[i]);
 
-	for (int i = EXAMPLE_SIZE; i < RAM_SIZE; i++)
+	for (int i = size; i < RAM_SIZE; i++)
 		set_ram_from_int(i, 0x0);
 }
 
@@ -41,7 +50,7 @@ int main(int argc, char* argv[]) {
 	load_ram();
 	load_buses();
 
-	enable_trap(1);
+	enable_trap(0);
 	enable_debug(1);
 	set_catchfire(1);
 
@@ -55,10 +64,6 @@ int main(int argc, char* argv[]) {
 		load_test_program();	
 	}
 
-	printf("PRESS ENTER TO RUN PROGRAM\n");
-	getchar();
-	loop();	
-
-	return 0;
+	loop();
 }
 

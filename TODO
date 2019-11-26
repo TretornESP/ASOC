@@ -1,5 +1,0 @@
-Que falta:
-	addressing.c (modos de direccionamiento)
-	alu.c (instrucciones para la alu)
-	instructions.c (opcodes)
-	

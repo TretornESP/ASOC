@@ -34,4 +34,7 @@ void load_ram();
 void dump_ram_at(int);
 int mp_cycle();
 void dump_ram(int, int);
+int read_mode_from_bus(data *);
+int read_disp_from_bus(data *);
+void check_bus_sanity();
 #endif
