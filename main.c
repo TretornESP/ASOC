@@ -98,12 +98,12 @@ int main(int argc, char* argv[]) {
 	load_buses();
 	load_interrupt();
 
-	enable_trap(1);
-	enable_debug(1);
+	enable_trap(0);
+	enable_debug(0);
 	set_catchfire(0);
 	enable_interrupts(1);
 	
-	//load_async_input(); Doesnt work!!
+	load_async_input();// Doesnt work!!
 
 	if (argc == 2) {
 		if (load_ram_from_file(argv[1])) {

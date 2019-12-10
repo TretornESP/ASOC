@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <pthread.h>
-
+#include <sys/mman.h>
+#include <sys/ipc.h> 
+#include <sys/shm.h> 
+#include <fcntl.h>
+#include <unistd.h>
 #include "buses.h"
 #include "exception.h"
 #include "ces.h"
@@ -32,14 +36,41 @@ int input() {
 }
 
 void *input_as(void* args) {
-	int a = 0;
-	scanf(" %lc", &a);
-	in_buf[i_sp] = a+1; //Si tecleas a muestra b
-	i_sp++;
-	push_int(KEYBOARD_READ_INT);
+	key_t key1;
+        key_t key2;
+        if (-1 != open("/tmp/data", O_CREAT, 0777)) {
+	        key1 = ftok("/tmp/data", 0);
+        } else {
+	        ces_shm_err();
+        }
+        if (-1 != open("/tmp/status", O_CREAT, 0777)) {
+	        key2 = ftok("/tmp/status", 0);
+        } else {
+ 	       ces_shm_err();
+        }
+ 
+        int id1 = shmget(key1, 0x1000, IPC_CREAT | SHM_R | SHM_W);
+        int id2 = shmget(key2, 0x2000, IPC_CREAT | SHM_R | SHM_W);
+
+	char *data = (char*) shmat(id1,0,0);
+	char *status = (char*) shmat(id2,0,0);
+
+	*data = '0';
+	*status  = '0';
+
+	while (1) {
+		if (*status == '1') {
+			in_buf[i_sp] = *data; //Si tecleas a muestra b
+			i_sp++;
+			push_int(KEYBOARD_READ_INT);
+			*status = '0';
+
+		}
+	}
 }
 
-void load_async_input() {
+void load_async_input() { 
+  
 	pthread_t in;
 	pthread_create(&in, NULL, input_as, NULL);
 }
@@ -63,7 +94,7 @@ int output(int data) {
 	o_buf[o_sp] = data;
 	o_sp++;
 	printf("%c", data);
-	printf("\n");
+	printf("\n"); //CHECKMEIN
 }
 
 int get_mode(data * d) {

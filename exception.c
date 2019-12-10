@@ -33,3 +33,9 @@ void int_overflow() {
 	printf("TOO MANY INTERRUPTS");
 	halted();
 }
+
+void ces_shm_err() {
+	header();
+	printf("Shared memory doesnt work, disable load_async_interrupts()\n");
+	halted();
+}
