@@ -13,7 +13,7 @@
 #include "int.h"
 #include "ces.h"
 
- /*
+
 unsigned int example_program[] = {
 	0xA00, //   0   LDH x 0           1010 0000 0000 0xA00
 	0x1CD, //   1   LD acc post(0xD)  0001 1100 1100 0x1CD
@@ -51,8 +51,9 @@ unsigned int example_program[] = {
 	0x06F, //   F03 o
 	0x063, //   F04 c
        [0xF05 ... 0xFFF] = 0x0, // FF5 to FFF
-}; */
+};
 
+/*
 unsigned int example_program[] = {
 	0x600, //   0   BR 0              0110 0000 0000 0x600
        [0x001 ... 0x00B] = 0x0,
@@ -80,7 +81,7 @@ unsigned int example_program[] = {
 	0x063, //   F04 c
        [0xF05 ... 0xFFF] = 0x0, // FF5 to FFF
 };
-
+*/
 void load_test_program() {
 	size_t size = sizeof(example_program)/sizeof(example_program[0]);
 	for (int i = 0; i < size; i++)
@@ -98,12 +99,12 @@ int main(int argc, char* argv[]) {
 	load_buses();
 	load_interrupt();
 
-	enable_trap(0);
-	enable_debug(0);
+	enable_trap(1);
+	enable_debug(1);
 	set_catchfire(0);
 	enable_interrupts(1);
 	
-	load_async_input();// Doesnt work!!
+	//load_async_input();// Doesnt work!!
 
 	if (argc == 2) {
 		if (load_ram_from_file(argv[1])) {
