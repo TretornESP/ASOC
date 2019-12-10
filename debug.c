@@ -22,6 +22,10 @@ void * dump(void * args) {
 	}
 }
 
+int debuggin() {
+	return debug_mode;
+}
+
 void enable_debug(int enabled) {
 	debug_mode = enabled;
 	if (enabled) {

@@ -1,6 +1,6 @@
 #ifndef _UC_H
 #define _UC_H
-
+#define MAX_CPU_CYCLES 0x32000
 #include "iset.h"
 
 typedef struct _uc_data {
@@ -28,10 +28,13 @@ void set_state(data *);
 data * get_state();
 int trap();
 void enable_trap(int);
+int can_interrupt();
+void enable_interrupts(int);
 void set_pc(int);
 void uc_overflow(int);
 void uc_carry(int);
 void uc_zero(int);
 void uc_hlt(int);
 void uc_backstep();
+void uc_reti();
 #endif

@@ -2,6 +2,7 @@
 #include "buses.h"
 #include "alu.h"
 #include "uc.h"
+#define BRB 0x1
 #define SIGN(i) ((i & 0x20) >> 5) ? -(i & 0x1F) : (i & 0x1F)
 
 void* ld(void* input){
@@ -31,7 +32,8 @@ void* add(void* input){
 
 void* br(void* input){
 	unsigned int * in = (unsigned int*) input;
-	set_pc(in[1]-1);
+	if (in[0] == BRB) uc_reti();
+	else set_pc(in[1]-1);
 }
 
 void* bz(void* input){
@@ -57,8 +59,8 @@ void* hlt(void* input){
 	uc_backstep();
 }
 
-void* ei(void* input){return 0;}
-void* di(void* input){return 0;}
+void* ei(void* input){enable_interrupts(1);}
+void* di(void* input){enable_interrupts(0);}
 
 void* subr(void* input) {
 	unsigned int * in = (unsigned int*) input;

@@ -27,3 +27,9 @@ void mp_unknown_code(int code) {
 	printf("UNKNOWN CONTROL CODE: %d", code);
 	halted();
 }
+
+void int_overflow() {
+	header();
+	printf("TOO MANY INTERRUPTS");
+	halted();
+}

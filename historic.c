@@ -1,4 +1,5 @@
 #include "historic.h"
+#include "debug.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -7,7 +8,7 @@ int idx = 0;
 
 void push(char* nemo, char* reg, char* addr, int mem) {
 
-	if (idx >= HISTORY_SIZE - 1) {
+	if (idx >= HISTORY_SIZE - 1 && debuggin()) {
 		printf("Historic is full\n");
 		return;
 	}

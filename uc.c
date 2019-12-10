@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 #include "iset.h"
 #include "alu.h"
@@ -10,15 +12,19 @@
 #include "buses.h"
 #include "historic.h"
 #include "ces.h"
+#include "int.h"
+#include "debug.h"
 
 #define SIGN(i) ((i & 0x20) >> 5) ? -(i & 0x1F) : (i & 0x1F)
 #define clear() printf("\033[H\033[J")
 #define gotoxy(x,y) printf("\033[%d;%dH", (y), (x))
 
 int PC = 0;
+int SAVED_PC = 0;
 int cycle = 0;
 
 data * state;
+data * saved_state;
 
 data * get_state() {
 	return state;
@@ -34,20 +40,40 @@ void set_pc(int pc) {
 
 void dump_status() {
 	int idx = 0;
-	printf("S: XXXXXXXCOZTH\nS: ");
+	printf("S: XXXXXEICOZTH\nS: ");
 	for (int i = 0x001; i < 4096; i*=2) {
 		printf("%d", (state->wrapper & i) >> idx);
 		idx++;
 	}
 	printf("\n");
+	printf("CYCLE: %d PC: %x SAVED_PC: %x\n", cycle, PC, SAVED_PC);
 }
 
+void context_save() {
+	SAVED_PC = PC;
+	memcpy(saved_state, state, sizeof(state));
+}
+
+void context_restore() {
+	PC = SAVED_PC-1;
+	memcpy(state, saved_state, sizeof(state));
+}
 data * fetch() {
+	if (state -> binary.d6 && state -> binary.d5) {
+		context_save();
+		PC = IVT + (pop_int().code)*IV_SIZE;
+		
+		bus_a_set(data_from_int(PC));
+		bus_c_set(data_from_int(RAM_RM));
+		mp_cycle();
+		
+		PC = bus_d_get()->wrapper;
+	}
+
 	bus_a_set(data_from_int(PC));
 	bus_c_set(data_from_int(RAM_RM));
-
 	mp_cycle();
-	
+		
 	return bus_d_get();
 }
 
@@ -66,6 +92,7 @@ uc_data * decode(data * d) {
 }
 
 instr decode_opc(int i) {
+
 	int index = (i & 0xE00) >> 9;
 
 	if (iset[index].opc == 0x7) {
@@ -105,8 +132,13 @@ void dump_decoded(uc_data * d) {
 	printf("[DEBUG] DATA at %p (func: %p, reg: %s contains: %x, cd: %x\n", d, d->func, get_register_names(d -> reg), alu_get_reg(d -> reg), d -> ed);
 }
 
+void uc_reti() {
+	context_restore();
+}
+
 void load_uc() {
 	state = calloc(1, sizeof(data));
+	saved_state = calloc(1, sizeof(data));
 }
 
 void enable_trap(int trap) {
@@ -119,6 +151,19 @@ int trap() {
 
 void uc_overflow(int idx) {
 	state -> binary.d8 = idx;
+}
+
+int can_interrupt() {
+	return state -> binary.d5;
+}
+
+void enable_interrupts(int idx) {
+	state -> binary.d5 = idx;
+}
+
+
+void uc_int(int idx) {
+	state -> binary.d6 = idx;
 }
 
 void uc_carry(int idx) {
@@ -168,6 +213,7 @@ void help() {
 	printf("s set memory at\n");
 	printf("x examine addr\n");
 	printf("i write to input\n");
+	printf("f execute until finish\n");
 	printf("q quit\n");
 }
 
@@ -182,22 +228,15 @@ void finish() {
 	exit(0);
 }
 
+void exec_overflow() {
+	printf("EXECUTION EXCEEDED LIMIT OF %d CYCLES\n", MAX_CPU_CYCLES);
+	printf("ABORTING!!!!!!!!!!\n");
+	exit(0);
+}
+
 void loop() {
 	while (1) {
-		data * raw = fetch(); //Retrieve from ram
-		uc_data * decoded = decode(raw); //Decode into opc, register, efective direction
-		//clear();
-		dump_ram(5,5); 	
-		dump_registers();
-		dump_status();
-		//print_historic();
-		execute(decoded); //Execute from alu
-		//dump_decoded(decoded);
-		//printf("[DEBUG][RUNTIME] CYCLE %d EXECUTED: %d RESULT: %d\n", cycle, PC, result);
-		//printf("[DEBUG] YIELDING TO CES\n");
-		ces_cycle();
-		cycle++;
-		PC++;
+		usleep(1000);
 		if (trap()) {
 			int flag = 1;
 			while (flag) { 
@@ -218,6 +257,8 @@ void loop() {
 					input();
 				} else if (c=='q') {
 					exit(0);
+				} else if (c=='f') {
+					enable_trap(0);
 				}
 			}
 		} else {
@@ -228,6 +269,25 @@ void loop() {
 					finish();
 			}		
 		}
+
+		uc_int(interrupted()); //If any interrupt is pending attend it
+		data * raw = fetch(); //Retrieve from ram
+		uc_data * decoded = decode(raw); //Decode into opc, register, efective direction
+		if (debuggin()) {
+			clear();
+			dump_ram(5,5); 	
+			dump_registers();
+			dump_status();
+		}
+		//print_historic();
+		execute(decoded); //Execute from alu
+		//dump_decoded(decoded);
+		//printf("[DEBUG][RUNTIME] CYCLE %d EXECUTED: %d RESULT: %d\n", cycle, PC, result);
+		//printf("[DEBUG] YIELDING TO CES\n");
+		ces_cycle();
+		if (cycle >= MAX_CPU_CYCLES) exec_overflow();
+		cycle++;
+		PC++;
 	}
 }
 

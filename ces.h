@@ -13,4 +13,5 @@ int ces_cycle();
 void load_ces();
 void dump_output();
 int input();
+void load_async_input();
 #endif
